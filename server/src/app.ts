@@ -39,15 +39,17 @@ app.use(notFound);
 app.use(errorHandler);
 
 io.on(ClientToServer.Connection, (socket) => {
-    const getUsersRoom = () => Array.from(socket.rooms)[0];
+    const getUsersRoom = () =>
+        Array.from(socket.rooms).find((room) => room !== socket.id);
 
-    socket.on(ClientToServer.RequestingAllRooms, () => {
-        io.to(socket.id).emit(ServerToClient.SendingAllRooms, getAllRooms());
+    socket.on(ClientToServer.RequestingAllRooms, (acknowledgeAllRooms) => {
+        createNewRoom();
+        acknowledgeAllRooms(getAllRooms());
     });
 
-    socket.on(ClientToServer.CreatingRoom, () => {
+    socket.on(ClientToServer.CreatingRoom, (acknowledgeCreating) => {
         const newRoomId = createNewRoom();
-        io.to(socket.id).emit(ServerToClient.RoomCreated, newRoomId);
+        acknowledgeCreating(newRoomId);
     });
 
     socket.on(ClientToServer.JoiningRoom, (roomId: string, userName?: string) => {

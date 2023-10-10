@@ -12,6 +12,8 @@ export enum ClientToServer {
 }
 
 export enum ServerToClient {
+    SendingAllRooms = 'sendingAllRooms',
+    RoomCreated = 'roomCreated',
     UserJoinedRoom = 'userJoinedRoom',
     RoomJoined = 'roomJoined',
     SendingRoomData = 'sendingRoomData',
@@ -20,12 +22,8 @@ export enum ServerToClient {
 }
 
 export type ClientToServerEvents = {
-    [ClientToServer.RequestingAllRooms]: (
-        acknowledgeAllRooms: (rooms: RoomPreview[]) => void
-    ) => void;
-    [ClientToServer.CreatingRoom]: (
-        acknowledgeCreating: (roomId: string) => void
-    ) => void;
+    [ClientToServer.RequestingAllRooms]: () => void;
+    [ClientToServer.CreatingRoom]: () => void;
     [ClientToServer.JoiningRoom]: (roomId: string, userName?: string) => void;
     [ClientToServer.RequestingRoomData]: (roomId: string) => void;
     [ClientToServer.Drawing]: (move: Move) => void;
@@ -33,6 +31,8 @@ export type ClientToServerEvents = {
 };
 
 export type ServerToClientEvents = {
+    [ServerToClient.SendingAllRooms]: (roomData: RoomPreview[]) => void;
+    [ServerToClient.RoomCreated]: (roomId: string) => void;
     [ServerToClient.RoomJoined]: (message: string) => void;
     [ServerToClient.UserJoinedRoom]: (userName: string) => void;
     [ServerToClient.SendingRoomData]: (roomData: ClientRoom) => void;

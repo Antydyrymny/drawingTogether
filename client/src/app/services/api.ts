@@ -1,5 +1,15 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
-// import getSocket from './getSocket';
+import getSocket from './getSocket';
+import {
+    // ServerToClient,
+    ClientToServer,
+    // Shape,
+    // CtxMode,
+    RoomPreview,
+    // ClientRoom,
+    // CtxOptions,
+    // Move,
+} from '../../utils/types';
 
 export type RoomData = {
     message: string;
@@ -16,15 +26,32 @@ const apiSlice = createApi({
         baseUrl,
     }),
     endpoints: (builder) => ({
-        getRoomData: builder.query<{ results: RoomData }, string>({
-            query: (roomId) => ({
-                url: '/getRoom',
-                params: { roomId },
-            }),
+        getAllRooms: builder.query<RoomPreview[], void>({
+            queryFn: () => {
+                const socket = getSocket();
+                return new Promise((resolve) => {
+                    socket.emit(
+                        ClientToServer.RequestingAllRooms,
+                        (rooms: RoomPreview[]) => {
+                            resolve({ data: rooms });
+                        }
+                    );
+                });
+            },
+        }),
+        createRoom: builder.mutation<string, void>({
+            queryFn: () => {
+                const socket = getSocket();
+                return new Promise((resolve) => {
+                    socket.emit(ClientToServer.CreatingRoom, (roomId: string) => {
+                        resolve({ data: roomId });
+                    });
+                });
+            },
         }),
     }),
 });
 
 export default apiSlice;
 
-export const { useGetRoomDataQuery } = apiSlice;
+export const { useGetAllRoomsQuery } = apiSlice;

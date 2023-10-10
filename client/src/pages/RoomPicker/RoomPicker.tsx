@@ -1,28 +1,25 @@
-import { useEffect, useState } from 'react';
-import { nanoid } from '@reduxjs/toolkit';
-import getSocket from '../../app/services/getSocket';
 import { Link } from 'react-router-dom';
+import { useGetAllRoomsQuery } from '../../app/services/api';
+import LoadingSpinner from '../../components/LoadingSpinner/LoadingSpinner';
 
 function RoomPicker() {
-    const socket = getSocket();
-    const [answer, setAnswer] = useState('');
-
-    useEffect(() => {
-        const onAns = (val: string) => setAnswer(val);
-        socket.on('answer', onAns);
-
-        return () => {
-            socket.off('answer', onAns);
-        };
-    }, [socket]);
-
+    const { data: allRooms, isLoading, isSuccess } = useGetAllRoomsQuery();
+    console.log(allRooms);
     return (
         <>
-            <Link to={`/${nanoid}`} onClick={() => socket.connect()}>
-                Join room
-            </Link>
-            <button onClick={() => socket.emit('ask', 'myQuestion')}>Ask</button>
-            <div>{answer}</div>
+            <Link to={`/`}>Join room</Link>
+            {isLoading && <LoadingSpinner />}
+            {isSuccess && (
+                <div>
+                    {allRooms.map((room) => (
+                        <div key={room.id}>
+                            {room.id}
+                            <br />
+                            {room.userNumber}
+                        </div>
+                    ))}
+                </div>
+            )}
         </>
     );
 }

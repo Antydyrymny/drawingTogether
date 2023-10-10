@@ -1,42 +1,87 @@
 import express from 'express';
 import { createServer } from 'node:http';
 import { Server } from 'socket.io';
-// import bodyParser from 'body-parser';
 import cors from 'cors';
-// import morgan from 'morgan';
-// import helmet from 'helmet';
-// import { notFound, errorHandler } from './middleware';
-// import mainRouter from './routes';
-// import './routes/auth/auth';
 import dotenv from 'dotenv';
+import { notFound, errorHandler } from './middleware';
+import {
+    getAllRooms,
+    createNewRoom,
+    populateRoom,
+    getRoomData,
+    addMove,
+    leaveFromRoom,
+} from './utils/serverActions';
+import {
+    ClientToServer,
+    ServerToClient,
+    ClientToServerEvents,
+    ServerToClientEvents,
+    Move,
+} from './utils/types';
 
 dotenv.config();
 
 const app = express();
 const server = createServer(app);
-const io = new Server(server, {
+app.use(cors());
+const io = new Server<ClientToServerEvents, ServerToClientEvents>(server, {
     cors: {
-        origin: [process.env.DEV_CLIENT_ORIGIN, process.env.PROD_CLIENT_ORIGIN],
+        origin: '*',
     },
 });
 
-// app.use(bodyParser.urlencoded({ extended: true }));
-// app.use(bodyParser.json());
-// app.use(morgan('dev'));
-// app.use(helmet());
-app.use(cors());
-// app.use(express.json());
-
 app.get('/', (req, res) => {
-    res.json({ status: 'Server Online' });
+    res.status(200).json({ status: 'OK' });
 });
 
-// app.use('/api', mainRouter);
+app.use(notFound);
+app.use(errorHandler);
 
-// app.use(notFound);
-// app.use(errorHandler);
+io.on(ClientToServer.Connection, (socket) => {
+    const getUsersRoom = () => Array.from(socket.rooms)[0];
 
-const userMap = new Map();
-io.on('connection', (socket) => {});
+    socket.on(ClientToServer.RequestingAllRooms, () => {
+        io.to(socket.id).emit(ServerToClient.SendingAllRooms, getAllRooms());
+    });
+
+    socket.on(ClientToServer.CreatingRoom, () => {
+        const newRoomId = createNewRoom();
+        io.to(socket.id).emit(ServerToClient.RoomCreated, newRoomId);
+    });
+
+    socket.on(ClientToServer.JoiningRoom, (roomId: string, userName?: string) => {
+        const newUser = populateRoom(roomId, socket.id, userName);
+        socket.join(roomId);
+        socket.to(roomId).emit(ServerToClient.UserJoinedRoom, newUser);
+        io.to(socket.id).emit(ServerToClient.RoomJoined, `Room:${roomId} joined`);
+    });
+
+    socket.on(ClientToServer.RequestingRoomData, () => {
+        const roomId = getUsersRoom();
+        io.to(socket.id).emit(ServerToClient.SendingRoomData, getRoomData(roomId));
+    });
+
+    socket.on(ClientToServer.Drawing, (move: Move) => {
+        const roomId = getUsersRoom();
+        addMove(roomId, move);
+        socket.to(roomId).emit(ServerToClient.UserDrew, move);
+    });
+
+    socket.on(ClientToServer.LeavingRoom, () => {
+        const roomId = getUsersRoom();
+        const userName = leaveFromRoom(roomId, socket.id);
+        socket.to(roomId).emit(ServerToClient.UserLeft, userName);
+        socket.leave(roomId);
+    });
+
+    socket.on(ClientToServer.Disconnecting, () => {
+        const roomId = getUsersRoom();
+        if (!roomId) return;
+        const userName = leaveFromRoom(roomId, socket.id);
+        socket.leave(roomId);
+        io.to(roomId).emit(ServerToClient.UserLeft, userName);
+    });
+});
 
 export default server;

@@ -6,18 +6,19 @@ import dotenv from 'dotenv';
 import { notFound, errorHandler } from './middleware';
 import {
     getAllRooms,
+    getRoomPreview,
     createNewRoom,
     populateRoom,
     getRoomData,
     addMove,
-    leaveFromRoom,
+    clearUserFromRoom,
+    deleteEmptyRoom,
 } from './utils/serverActions';
 import {
     ClientToServer,
     ServerToClient,
     ClientToServerEvents,
     ServerToClientEvents,
-    Move,
 } from './utils/types';
 
 dotenv.config();
@@ -40,50 +41,79 @@ app.use(errorHandler);
 
 io.on(ClientToServer.Connection, (socket) => {
     const getUsersRoom = () =>
-        Array.from(socket.rooms).find((room) => room !== socket.id);
+        Array.from(socket.rooms).find((room) => room !== socket.id && room !== 'lobby');
 
     socket.on(ClientToServer.RequestingAllRooms, (acknowledgeAllRooms) => {
-        createNewRoom();
+        socket.join('lobby');
         acknowledgeAllRooms(getAllRooms());
     });
 
-    socket.on(ClientToServer.CreatingRoom, (acknowledgeCreating) => {
-        const newRoomId = createNewRoom();
+    socket.on(ClientToServer.CreatingRoom, (userName, acknowledgeCreating) => {
+        const [verifiedUserName, newRoomId] = createNewRoom({ userName });
+        populateRoom({
+            roomId: newRoomId,
+            userId: socket.id,
+            userName: verifiedUserName,
+        });
+        socket.leave('lobby');
+        socket.join(newRoomId);
         acknowledgeCreating(newRoomId);
+        io.in('lobby').emit(ServerToClient.RoomCreated, getRoomPreview(newRoomId));
     });
 
-    socket.on(ClientToServer.JoiningRoom, (roomId: string, userName?: string) => {
-        const newUser = populateRoom(roomId, socket.id, userName);
+    socket.on(ClientToServer.JoiningRoom, ({ roomId, userName }, acknowledgeJoining) => {
+        const newUser = populateRoom({ roomId, userId: socket.id, userName });
+        socket.leave('lobby');
         socket.join(roomId);
-        socket.to(roomId).emit(ServerToClient.UserJoinedRoom, newUser);
-        io.to(socket.id).emit(ServerToClient.RoomJoined, `Room:${roomId} joined`);
+        socket
+            .to(roomId)
+            .emit(ServerToClient.UserJoinedRoom, { id: socket.id, name: newUser });
+        acknowledgeJoining(`Room:${roomId} joined`);
     });
 
-    socket.on(ClientToServer.RequestingRoomData, () => {
+    socket.on(ClientToServer.RequestingRoomData, (acknowledgeRoomData) => {
         const roomId = getUsersRoom();
-        io.to(socket.id).emit(ServerToClient.SendingRoomData, getRoomData(roomId));
+        acknowledgeRoomData(getRoomData(roomId, socket.id).roomData);
     });
 
-    socket.on(ClientToServer.Drawing, (move: Move) => {
+    socket.on(ClientToServer.RequestingUsers, (acknowledgeUsers) => {
+        const roomId = getUsersRoom();
+        acknowledgeUsers(getRoomData(roomId, socket.id).roomUsers);
+    });
+
+    socket.on(ClientToServer.MovingMouse, (mouseMove) => {
+        const roomId = getUsersRoom();
+        socket.to(roomId).emit(ServerToClient.UserMovedMouse, mouseMove);
+    });
+
+    socket.on(ClientToServer.Drawing, (move) => {
         const roomId = getUsersRoom();
         addMove(roomId, move);
         socket.to(roomId).emit(ServerToClient.UserDrew, move);
     });
 
-    socket.on(ClientToServer.LeavingRoom, () => {
-        const roomId = getUsersRoom();
-        const userName = leaveFromRoom(roomId, socket.id);
-        socket.to(roomId).emit(ServerToClient.UserLeft, userName);
-        socket.leave(roomId);
+    socket.on(ClientToServer.LeavingRoom, (acknowledgeLeaving) => {
+        const roomId = onLeave();
+        acknowledgeLeaving(`Room:${roomId} left`);
     });
 
     socket.on(ClientToServer.Disconnecting, () => {
+        onLeave();
+        socket.leave('lobby');
+    });
+
+    const onLeave = () => {
         const roomId = getUsersRoom();
         if (!roomId) return;
-        const userName = leaveFromRoom(roomId, socket.id);
+        const userName = clearUserFromRoom(socket.id, roomId);
         socket.leave(roomId);
-        io.to(roomId).emit(ServerToClient.UserLeft, userName);
-    });
+        io.in(roomId).emit(ServerToClient.UserLeft, { id: socket.id, name: userName });
+        setTimeout(() => {
+            if (deleteEmptyRoom(roomId))
+                io.in('lobby').emit(ServerToClient.RoomDeleted, roomId);
+        }, 1000);
+        return roomId;
+    };
 });
 
 export default server;

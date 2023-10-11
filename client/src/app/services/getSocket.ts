@@ -1,6 +1,6 @@
 import { io, Socket } from 'socket.io-client';
 
-const URL =
+const url =
     import.meta.env.VITE_ENV === 'DEV'
         ? import.meta.env.VITE_DEV_URL
         : import.meta.env.VITE_SERVER_URL;
@@ -8,7 +8,7 @@ const URL =
 let socket: Socket;
 export default function getSocket() {
     if (!socket) {
-        socket = io(URL);
+        socket = io(url);
     }
     return socket;
 }

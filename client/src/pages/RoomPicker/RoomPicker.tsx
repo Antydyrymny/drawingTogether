@@ -18,7 +18,9 @@ import styles from './roomPicker.module.scss';
 
 function RoomPicker() {
     const navigate = useNavigate();
-    const [userName, setUserName] = useState('');
+    const [userName, setUserName] = useState(
+        () => localStorage.getItem(userNameKey) || ''
+    );
     const { data: allRooms, isLoading, isSuccess } = useGetAllRoomsQuery();
     const [createRoom, { isLoading: isCreating, isSuccess: isCreated }] =
         useCreateRoomMutation();

@@ -50,6 +50,7 @@ export type Room = {
 };
 
 export type CtxMode = 'line' | 'rect' | 'erase';
+export type CtxPathMode = 'line' | 'erase';
 
 export type CtxOptions = {
     color: string;
@@ -60,6 +61,19 @@ export type MouseMove = {
     userId: string;
     x: number;
     y: number;
+};
+
+export type PathMove = {
+    path: [number, number][];
+    options: CtxPathMode;
+};
+
+export type RectMove = {
+    rect: {
+        width: number;
+        height: number;
+    };
+    options: 'rect';
 };
 
 export type Move = {

@@ -1,15 +1,23 @@
 import { useEffect, useRef, useState } from 'react';
-import type { Point, MyDraw, CtxOptions } from '../utils/types';
+import type { Point, MyDraw, CtxOptions, Move } from '../utils/types';
 
-type useDrawProps = {
+type DrawProps = {
     canvasRef: React.RefObject<HTMLCanvasElement>;
     ctx: CanvasRenderingContext2D | undefined;
     options: CtxOptions;
+    broadcastDrawing: (move: Move) => void;
+    roomIsReady: boolean;
 };
 
-export default function useDraw({ canvasRef, ctx, options }: useDrawProps) {
+export default function useDraw({
+    canvasRef,
+    ctx,
+    options,
+    broadcastDrawing,
+    roomIsReady,
+}: DrawProps) {
     const [drawing, setDrawing] = useState(false);
-
+    const curPath = useRef<[number, number][]>([]);
     const prevPoint = useRef<null | Point>(null);
 
     const clear = () => {
@@ -22,19 +30,23 @@ export default function useDraw({ canvasRef, ctx, options }: useDrawProps) {
         const canvas = canvasRef.current;
         if (!canvas) return;
 
-        const image = canvas.toDataURL('image/jpeg', 1.0);
+        const image = canvas.toDataURL('image/jpg', 1.0);
         return image;
     };
 
     useEffect(() => {
         const canvas = canvasRef.current;
-        if (!canvas || !ctx) return;
+        if (!roomIsReady || !canvas || !ctx) return;
 
         const setupCtxOptions = () => {
             ctx.strokeStyle = options.color;
-            if (options.mode === 'erase')
+            if (options.mode === 'erase') {
+                ctx.lineWidth = 30;
                 ctx.globalCompositeOperation = 'destination-out';
-            else ctx.globalCompositeOperation = 'source-over';
+            } else {
+                ctx.lineWidth = 5;
+                ctx.globalCompositeOperation = 'source-over';
+            }
         };
 
         const myDraw = ({ prevPoint, curPoint, ctx, options }: MyDraw) => {
@@ -61,6 +73,11 @@ export default function useDraw({ canvasRef, ctx, options }: useDrawProps) {
         const onMove = (e: MouseEvent) => {
             if (!drawing) return;
             const curPoint = computePointInCanvas(e);
+
+            if (options.mode !== 'rect') {
+                curPath.current.push([curPoint.x, curPoint.y]);
+            }
+
             myDraw({
                 ctx,
                 options,
@@ -73,6 +90,10 @@ export default function useDraw({ canvasRef, ctx, options }: useDrawProps) {
         const onMouseUp = () => {
             setDrawing(false);
             prevPoint.current = null;
+            if (curPath.current.length !== 0) {
+                broadcastDrawing({ options, path: curPath.current });
+                curPath.current = [];
+            }
         };
 
         canvas.addEventListener('mousedown', onMouseDown);
@@ -84,7 +105,7 @@ export default function useDraw({ canvasRef, ctx, options }: useDrawProps) {
             canvas.removeEventListener('mousemove', onMove);
             window.removeEventListener('mouseup', onMouseUp);
         };
-    }, [canvasRef, ctx, drawing, options]);
+    }, [broadcastDrawing, canvasRef, ctx, drawing, options, roomIsReady]);
 
-    return { canvasRef, clear, exportJpg };
+    return { clear, exportJpg };
 }

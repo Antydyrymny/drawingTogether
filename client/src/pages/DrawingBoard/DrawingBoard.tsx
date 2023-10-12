@@ -26,11 +26,11 @@ function DrawingBoard() {
     };
 
     const location = useLocation();
-    const [joinRoom, { data: userId, isSuccess: joinedRoom }] = useJoiningRoomMutation();
+    const [joinRoom, { data: userId, isSuccess: roomIsReady }] = useJoiningRoomMutation();
     const { data: users, isSuccess: subscribed } = useSubscribeToRoomUsersQuery(
         undefined,
         {
-            skip: !joinedRoom,
+            skip: !roomIsReady,
         }
     );
     const [emitMouseMove] = useMoveMouseMutation();
@@ -52,7 +52,12 @@ function DrawingBoard() {
     useEffect(() => {
         function onMouseMove(e: MouseEvent) {
             if (!userId) return;
-            emitMouseMove({ userId: userId, x: e.clientX, y: e.clientY });
+
+            emitMouseMove({
+                userId: userId,
+                x: (e.clientX / window.innerWidth) * 100,
+                y: (e.clientY / window.innerHeight) * 100,
+            });
         }
         const onMouseMoveThrottled = throttle<MouseEvent>(onMouseMove, 75);
 
@@ -67,6 +72,7 @@ function DrawingBoard() {
                 users.map((user) => (
                     <Cursor key={user.id} name={user.name} x={user.x} y={user.y} />
                 ))}
+            <Cursor name={'DaKing'} x={20} y={50} />
             <Leave onClick={handleLeave} />
             <div>
                 <div className='mb-3 d-flex justify-content-center '>
@@ -110,7 +116,7 @@ function DrawingBoard() {
                         </ToggleButton>
                     </ButtonGroup>
                 </div>
-                <Canvas options={{ color, mode: tool }} />
+                <Canvas options={{ color, mode: tool }} roomIsReady />
             </div>
         </Container>
     );

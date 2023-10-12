@@ -10,10 +10,10 @@ export default function useCtx() {
         const newCtx = canvasRef.current?.getContext('2d');
 
         if (newCtx) {
+            newCtx.fillStyle = 'white';
+            newCtx.fillRect(0, 0, newCtx.canvas.width, newCtx.canvas.height);
             newCtx.lineJoin = 'round';
             newCtx.lineCap = 'round';
-            newCtx.lineWidth = 5;
-
             setCtx(newCtx);
         }
     }, [canvasRef]);

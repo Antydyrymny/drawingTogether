@@ -16,19 +16,22 @@ import brush from '../../assets/brush.png';
 import rect from '../../assets/square.png';
 import eraser from '../../assets/eraser.png';
 import type { CtxMode } from '../../utils/types';
-import styles from './drawingBoard.module.scss';
 
 function DrawingBoard() {
     const [color, setColor] = useState('#000');
     const [tool, setTool] = useState<CtxMode>('line');
-
     const handleToolChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setTool(e.target.value as CtxMode);
     };
 
     const location = useLocation();
-    const [joinRoom, joiningStatus] = useJoiningRoomMutation();
-    const { data: users, isSuccess } = useSubscribeToRoomUsersQuery();
+    const [joinRoom, { data: userId, isSuccess: joinedRoom }] = useJoiningRoomMutation();
+    const { data: users, isSuccess: subscribed } = useSubscribeToRoomUsersQuery(
+        undefined,
+        {
+            skip: !joinedRoom,
+        }
+    );
     const [emitMouseMove] = useMoveMouseMutation();
     const [leaveRoom] = useLeaveRoomMutation();
 
@@ -41,24 +44,28 @@ function DrawingBoard() {
     useEffect(() => {
         const userName = localStorage.getItem(userNameKey) ?? undefined;
         const roomId = location.pathname.split('/').slice(-1)[0];
+
         joinRoom({ roomId, userName });
     }, [joinRoom, location.pathname]);
 
     useEffect(() => {
         function onMouseMove(e: MouseEvent) {
-            emitMouseMove({ userId: '1', x: e.clientX, y: e.clientY });
+            if (!userId) return;
+            emitMouseMove({ userId: userId, x: e.clientX, y: e.clientY });
         }
-        // !-----------------------------------------------------
-        const onMouseMoveThrottled = throttle<MouseEvent>(onMouseMove, 300);
+        const onMouseMoveThrottled = throttle<MouseEvent>(onMouseMove, 75);
+
         window.addEventListener('mousemove', onMouseMoveThrottled);
 
-        () => window.removeEventListener('mousemove', onMouseMoveThrottled);
-    });
+        return () => window.removeEventListener('mousemove', onMouseMoveThrottled);
+    }, [emitMouseMove, userId]);
 
     return (
         <Container className='vh-100 pt-2 d-flex justify-content-center align-items-center'>
-            {isSuccess &&
-                users.map((user) => <Cursor name={user.name} x={user.x} y={user.y} />)}
+            {subscribed &&
+                users.map((user) => (
+                    <Cursor key={user.id} name={user.name} x={user.x} y={user.y} />
+                ))}
             <Leave onClick={handleLeave} />
             <div>
                 <div className='mb-3 d-flex justify-content-center '>

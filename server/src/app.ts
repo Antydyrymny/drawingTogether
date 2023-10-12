@@ -20,6 +20,7 @@ import {
     ClientToServerEvents,
     ServerToClientEvents,
 } from './utils/types';
+import { rooms } from './data/data';
 
 dotenv.config();
 
@@ -68,7 +69,7 @@ io.on(ClientToServer.Connection, (socket) => {
         socket
             .to(roomId)
             .emit(ServerToClient.UserJoinedRoom, { id: socket.id, name: newUser });
-        acknowledgeJoining(`Room:${roomId} joined`);
+        acknowledgeJoining(socket.id);
     });
 
     socket.on(ClientToServer.RequestingRoomData, (acknowledgeRoomData) => {

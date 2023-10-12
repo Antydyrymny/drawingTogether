@@ -30,7 +30,7 @@ export type ClientToServerEvents = {
     ) => void;
     [ClientToServer.JoiningRoom]: (
         joinRoomRequest: JoinRoomRequest,
-        acknowledgeJoining: (response: string) => void
+        acknowledgeJoining: (userId: string) => void
     ) => void;
     [ClientToServer.RequestingRoomData]: (
         acknowledgeRoomData: (roomData: Move[]) => void

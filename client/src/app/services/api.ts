@@ -28,6 +28,7 @@ const apiSlice = createApi({
     baseQuery: fetchBaseQuery({
         baseUrl,
     }),
+    tagTypes: ['AllRooms', 'userId'],
     endpoints: (builder) => ({
         getAllRooms: builder.query<RoomPreview[], void>({
             queryFn: () => {
@@ -69,6 +70,7 @@ const apiSlice = createApi({
                     // cacheDataLoaded throws
                 }
             },
+            providesTags: ['AllRooms'],
         }),
         createRoom: builder.mutation<string, string | undefined>({
             queryFn: (userName?) => {
@@ -82,6 +84,7 @@ const apiSlice = createApi({
                     );
                 });
             },
+            invalidatesTags: ['AllRooms'],
         }),
         joiningRoom: builder.mutation<string, JoinRoomRequest>({
             queryFn: (joinRoomRequest) => {
@@ -89,12 +92,13 @@ const apiSlice = createApi({
                     socket.emit(
                         ClientToServer.JoiningRoom,
                         joinRoomRequest,
-                        (acknowledgement: string) => {
-                            resolve({ data: acknowledgement });
+                        (userId: string) => {
+                            resolve({ data: userId });
                         }
                     );
                 });
             },
+            invalidatesTags: ['AllRooms'],
         }),
         subscribeToRoomUsers: builder.query<ClientUser[], void>({
             queryFn: () => {
@@ -152,7 +156,7 @@ const apiSlice = createApi({
         }),
         moveMouse: builder.mutation<void, MouseMove>({
             queryFn: (mouseMove) => {
-                socket.emit(ClientToServer.Drawing, mouseMove);
+                socket.emit(ClientToServer.MovingMouse, mouseMove);
                 return { data: undefined };
             },
         }),
@@ -170,6 +174,7 @@ const apiSlice = createApi({
                     });
                 });
             },
+            invalidatesTags: ['AllRooms'],
         }),
     }),
 });

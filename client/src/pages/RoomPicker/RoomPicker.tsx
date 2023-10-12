@@ -1,6 +1,15 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Container, Row, Col, Form, InputGroup, Button, Card } from 'react-bootstrap';
+import {
+    Container,
+    Row,
+    Col,
+    Form,
+    FloatingLabel,
+    InputGroup,
+    Button,
+    Card,
+} from 'react-bootstrap';
 import { toast } from 'react-toastify';
 import { useGetAllRoomsQuery, useCreateRoomMutation } from '../../app/services/api';
 import LoadingSpinner from '../../components/loadingSpinner/LoadingSpinner';
@@ -25,17 +34,24 @@ function RoomPicker() {
         }
     };
 
+    const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setUserName(e.target.value);
+        saveNameToLocalStorage(e.target.value);
+    };
+
     return (
         <Container className='vh-100 pt-5'>
             <Row className='d-flex justify-content-center '>
                 <Col lg={6}>
                     <Form onSubmit={handleCreate} className='lg-4'>
                         <InputGroup className='mb-3'>
-                            <Form.Control
-                                placeholder='Enter your name / get a random one'
-                                value={userName}
-                                onChange={(e) => setUserName(e.target.value)}
-                            />
+                            <FloatingLabel label='Enter your name / get a random one'>
+                                <Form.Control
+                                    placeholder='Enter your name / get a random one'
+                                    value={userName}
+                                    onChange={handleNameChange}
+                                />
+                            </FloatingLabel>
                             <Button
                                 type='submit'
                                 disabled={isCreating || isCreated}

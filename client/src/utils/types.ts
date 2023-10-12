@@ -20,8 +20,6 @@ export enum ServerToClient {
     UserLeft = 'userLeft',
 }
 
-export type CtxMode = 'line' | 'rect' | 'erase';
-
 export type User = {
     id: string;
     name: string;
@@ -51,8 +49,9 @@ export type Room = {
     users: Map<string, string>;
 };
 
+export type CtxMode = 'line' | 'rect' | 'erase';
+
 export type CtxOptions = {
-    lineWidth: number;
     color: string;
     mode: CtxMode;
 };
@@ -69,5 +68,14 @@ export type Move = {
         height: number;
     };
     path?: [number, number][];
+    options: CtxOptions;
+};
+
+export type Point = { x: number; y: number };
+
+export type MyDraw = {
+    prevPoint: Point | null;
+    curPoint: Point;
+    ctx: CanvasRenderingContext2D;
     options: CtxOptions;
 };

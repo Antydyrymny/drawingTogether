@@ -52,8 +52,6 @@ export type ServerToClientEvents = {
     [ServerToClient.RoomDeleted]: (roomId: string) => void;
 };
 
-export type CtxMode = 'line' | 'rect' | 'erase';
-
 export type User = {
     id: string;
     name: string;
@@ -75,6 +73,8 @@ export type Room = {
     allMoves: Move[];
     users: Map<string, string>;
 };
+
+export type CtxMode = 'line' | 'rect' | 'erase';
 
 export type CtxOptions = {
     lineWidth: number;

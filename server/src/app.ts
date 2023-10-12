@@ -20,7 +20,6 @@ import {
     ClientToServerEvents,
     ServerToClientEvents,
 } from './utils/types';
-import { rooms } from './data/data';
 
 dotenv.config();
 

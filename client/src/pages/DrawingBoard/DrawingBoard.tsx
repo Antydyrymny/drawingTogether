@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Container, ButtonGroup, ToggleButton, Image } from 'react-bootstrap';
 import { GithubPicker } from 'react-color';
+import Canvas from './Canvas';
 import Cursor from '../../components/cursor/Cursor';
 import Leave from '../../components/leave/Leave';
 import {
@@ -109,7 +110,7 @@ function DrawingBoard() {
                         </ToggleButton>
                     </ButtonGroup>
                 </div>
-                <canvas height={600} width={600} className='bg-light'></canvas>
+                <Canvas options={{ color, mode: tool }} />
             </div>
         </Container>
     );

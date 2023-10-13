@@ -36,6 +36,7 @@ export default function useSubscribeToCanvasEvents({
         };
 
         const draw = (move: Move) => {
+            ctx.save();
             setupCtxOptions(move.options);
             if (move.options.mode === 'rect') {
                 const rectMove = move as unknown as RectMove;
@@ -53,6 +54,7 @@ export default function useSubscribeToCanvasEvents({
                 });
                 ctx.stroke();
             }
+            ctx.restore();
         };
 
         socket.emit(ClientToServer.RequestingRoomData, (moves: Move[]) => {

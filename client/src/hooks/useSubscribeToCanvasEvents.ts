@@ -6,6 +6,7 @@ import {
     Move,
     CtxOptions,
     PathMove,
+    RectMove,
 } from '../utils/types';
 
 type SubscribeToCanvasEvents = {
@@ -26,18 +27,19 @@ export default function useSubscribeToCanvasEvents({
             ctx.strokeStyle = options.color;
             if (options.mode === 'erase') {
                 ctx.lineWidth = 30;
-                ctx.globalCompositeOperation = 'destination-out';
+                ctx.strokeStyle = '#f8f9fa';
+                // ctx.globalCompositeOperation = 'destination-out';
             } else {
                 ctx.lineWidth = 5;
-                ctx.globalCompositeOperation = 'source-over';
+                // ctx.globalCompositeOperation = 'source-over';
             }
         };
 
         const draw = (move: Move) => {
-            ctx.save();
             setupCtxOptions(move.options);
             if (move.options.mode === 'rect') {
-                // const rectMove = move as unknown as RectMove;
+                const rectMove = move as unknown as RectMove;
+                ctx.strokeRect(...rectMove.rect);
             } else {
                 const pathMove = move as unknown as PathMove;
 
@@ -51,7 +53,6 @@ export default function useSubscribeToCanvasEvents({
                 });
                 ctx.stroke();
             }
-            ctx.restore();
         };
 
         socket.emit(ClientToServer.RequestingRoomData, (moves: Move[]) => {

@@ -5,6 +5,7 @@ import useDraw from '../../hooks/useDraw';
 import { useDrawMutation } from '../../app/services/api';
 import useSubscribeToCanvasEvents from '../../hooks/useSubscribeToCanvasEvents';
 import type { CtxOptions } from '../../utils/types';
+import styles from './canvas.module.scss';
 
 type CanvasProps = {
     roomIsReady: boolean;
@@ -12,11 +13,13 @@ type CanvasProps = {
 };
 
 const Canvas = memo(function Canvas({ options, roomIsReady }: CanvasProps) {
-    const { canvasRef, ctx } = useCtx();
+    const { canvasRef, overlayRef, ctx, octx } = useCtx();
     const [broadcastDrawing] = useDrawMutation();
     const { exportJpg } = useDraw({
         canvasRef,
+        overlayRef,
         ctx,
+        octx,
         options,
         broadcastDrawing,
         roomIsReady,
@@ -27,7 +30,7 @@ const Canvas = memo(function Canvas({ options, roomIsReady }: CanvasProps) {
         <>
             <a
                 href={!ctx ? '#' : exportJpg()}
-                download='canvas.jpg'
+                download='canvas.jpeg'
                 style={{ position: 'absolute', top: '2rem', left: '2rem' }}
             >
                 <Button>Download</Button>
@@ -39,6 +42,14 @@ const Canvas = memo(function Canvas({ options, roomIsReady }: CanvasProps) {
                 className='bg-light border border-black rounded-md'
             >
                 Drawing together - canvas
+            </canvas>
+            <canvas
+                ref={overlayRef}
+                height={600}
+                width={600}
+                className={`${styles.overlay} border border-black rounded-md`}
+            >
+                Overlay
             </canvas>
         </>
     );

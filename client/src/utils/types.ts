@@ -69,27 +69,14 @@ export type PathMove = {
 };
 
 export type RectMove = {
-    rect: {
-        width: number;
-        height: number;
-    };
+    rect: [number, number, number, number];
     options: 'rect';
 };
 
 export type Move = {
-    rect?: {
-        width: number;
-        height: number;
-    };
+    rect?: [number, number, number, number];
     path?: [number, number][];
     options: CtxOptions;
 };
 
 export type Point = { x: number; y: number };
-
-export type MyDraw = {
-    prevPoint: Point | null;
-    curPoint: Point;
-    ctx: CanvasRenderingContext2D;
-    options: CtxOptions;
-};

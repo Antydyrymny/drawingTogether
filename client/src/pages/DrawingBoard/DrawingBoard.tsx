@@ -72,7 +72,6 @@ function DrawingBoard() {
                 users.map((user) => (
                     <Cursor key={user.id} name={user.name} x={user.x} y={user.y} />
                 ))}
-            <Cursor name={'DaKing'} x={20} y={50} />
             <Leave onClick={handleLeave} />
             <div>
                 <div className='mb-3 d-flex justify-content-center '>

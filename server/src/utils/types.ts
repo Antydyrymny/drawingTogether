@@ -89,10 +89,7 @@ export type MouseMove = {
 };
 
 export type Move = {
-    rect?: {
-        width: number;
-        height: number;
-    };
+    rect?: [number, number, number, number];
     path?: [number, number][];
     options: CtxOptions;
 };

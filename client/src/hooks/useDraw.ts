@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
-import type { Point, MyDraw, CtxOptions, Move } from '../utils/types';
+import type { Point, CtxOptions, Move } from '../utils/types';
 
 type DrawProps = {
     canvasRef: React.RefObject<HTMLCanvasElement>;
+    overlayRef: React.RefObject<HTMLCanvasElement>;
     ctx: CanvasRenderingContext2D | undefined;
+    octx: CanvasRenderingContext2D | undefined;
     options: CtxOptions;
     broadcastDrawing: (move: Move) => void;
     roomIsReady: boolean;
@@ -11,14 +13,17 @@ type DrawProps = {
 
 export default function useDraw({
     canvasRef,
+    overlayRef,
     ctx,
+    octx,
     options,
     broadcastDrawing,
     roomIsReady,
 }: DrawProps) {
-    const [drawing, setDrawing] = useState(false);
-    const curPath = useRef<[number, number][]>([]);
+    const [drawingLine, setDrawingLine] = useState(false);
+    const [drawingSquare, setDrawingSquare] = useState(false);
     const prevPoint = useRef<null | Point>(null);
+    const curPath = useRef<[number, number][]>([]);
 
     const clear = () => {
         if (!canvasRef.current || !ctx) return;
@@ -30,37 +35,36 @@ export default function useDraw({
         const canvas = canvasRef.current;
         if (!canvas) return;
 
-        const image = canvas.toDataURL('image/jpg', 1.0);
+        const image = canvas.toDataURL('image/jpeg', 1.0);
         return image;
     };
 
     useEffect(() => {
         const canvas = canvasRef.current;
-        if (!roomIsReady || !canvas || !ctx) return;
+        const overlay = overlayRef.current;
+
+        if (!roomIsReady || !canvas || !overlay || !ctx || !octx) return;
 
         const setupCtxOptions = () => {
             ctx.strokeStyle = options.color;
+            octx.strokeStyle = options.color;
             if (options.mode === 'erase') {
                 ctx.lineWidth = 30;
-                ctx.globalCompositeOperation = 'destination-out';
+                ctx.strokeStyle = '#f8f9fa';
+                // ctx.globalCompositeOperation = 'destination-out';
             } else {
                 ctx.lineWidth = 5;
-                ctx.globalCompositeOperation = 'source-over';
+                // ctx.globalCompositeOperation = 'source-over';
             }
         };
 
-        const myDraw = ({ prevPoint, curPoint, ctx, options }: MyDraw) => {
-            if (options.mode === 'rect') return;
+        const onMouseDown = (e: MouseEvent) => {
             setupCtxOptions();
-
-            const startPoint = prevPoint ?? curPoint;
-            ctx.beginPath();
-            ctx.moveTo(startPoint.x, startPoint.y);
-            ctx.lineTo(curPoint.x, curPoint.y);
-            ctx.stroke();
+            if (options.mode === 'rect') {
+                setDrawingSquare(true);
+                prevPoint.current = computePointInCanvas(e);
+            } else setDrawingLine(true);
         };
-
-        const onMouseDown = () => setDrawing(true);
 
         const computePointInCanvas = (e: MouseEvent) => {
             const rect = canvas.getBoundingClientRect();
@@ -70,42 +74,73 @@ export default function useDraw({
             return { x, y };
         };
 
-        const onMove = (e: MouseEvent) => {
-            if (!drawing) return;
-            const curPoint = computePointInCanvas(e);
-
-            if (options.mode !== 'rect') {
-                curPath.current.push([curPoint.x, curPoint.y]);
-            }
-
-            myDraw({
-                ctx,
-                options,
-                curPoint,
-                prevPoint: prevPoint.current,
-            });
-            prevPoint.current = curPoint;
+        const drawLine = (curPoint: Point) => {
+            const startPoint = prevPoint.current ?? curPoint;
+            ctx.beginPath();
+            ctx.moveTo(startPoint.x, startPoint.y);
+            ctx.lineTo(curPoint.x, curPoint.y);
+            ctx.stroke();
         };
 
-        const onMouseUp = () => {
-            setDrawing(false);
-            prevPoint.current = null;
-            if (curPath.current.length !== 0) {
+        const getSquare = (e: MouseEvent): [number, number, number, number] => {
+            if (!prevPoint.current) return [0, 0, 0, 0];
+            const curPoint = computePointInCanvas(e);
+            return [
+                prevPoint.current.x,
+                prevPoint.current.y,
+                curPoint.x - prevPoint.current.x,
+                curPoint.y - prevPoint.current.y,
+            ];
+        };
+
+        const onMove = (e: MouseEvent) => {
+            if (!drawingLine && !drawingSquare) return;
+
+            if (options.mode === 'rect') {
+                octx.clearRect(0, 0, overlay.width, overlay.height);
+                octx.strokeRect(...getSquare(e));
+            } else {
+                const curPoint = computePointInCanvas(e);
+                curPath.current.push([curPoint.x, curPoint.y]);
+                drawLine(curPoint);
+                prevPoint.current = curPoint;
+            }
+        };
+
+        const onMouseUp = (e: MouseEvent) => {
+            setDrawingLine(false);
+            setDrawingSquare(false);
+            if (options.mode === 'rect') {
+                octx.clearRect(0, 0, overlay.width, overlay.height);
+                ctx.strokeRect(...getSquare(e));
+                broadcastDrawing({ options, rect: [...getSquare(e)] });
+            } else {
                 broadcastDrawing({ options, path: curPath.current });
                 curPath.current = [];
             }
+            prevPoint.current = null;
         };
 
-        canvas.addEventListener('mousedown', onMouseDown);
-        canvas.addEventListener('mousemove', onMove);
+        overlay.addEventListener('mousedown', onMouseDown);
+        overlay.addEventListener('mousemove', onMove);
         window.addEventListener('mouseup', onMouseUp);
 
         return () => {
-            canvas.removeEventListener('mousedown', onMouseDown);
-            canvas.removeEventListener('mousemove', onMove);
+            overlay.removeEventListener('mousedown', onMouseDown);
+            overlay.removeEventListener('mousemove', onMove);
             window.removeEventListener('mouseup', onMouseUp);
         };
-    }, [broadcastDrawing, canvasRef, ctx, drawing, options, roomIsReady]);
+    }, [
+        broadcastDrawing,
+        canvasRef,
+        overlayRef,
+        ctx,
+        octx,
+        drawingLine,
+        drawingSquare,
+        options,
+        roomIsReady,
+    ]);
 
     return { clear, exportJpg };
 }

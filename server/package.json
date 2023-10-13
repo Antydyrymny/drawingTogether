@@ -4,6 +4,7 @@
     "description": "drawing-together-socket-server",
     "main": "index.js",
     "scripts": {
+        "start": "node dist/src/index.js",
         "dev": "nodemon ./src/index.ts",
         "build": "npx tsc",
         "test": "echo \"Error: no test specified\" && exit 1"

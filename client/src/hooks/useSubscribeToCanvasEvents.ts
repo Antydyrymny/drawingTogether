@@ -63,8 +63,14 @@ export default function useSubscribeToCanvasEvents({
             draw(move);
         });
 
+        socket.on(ServerToClient.PollingRoomImg, () => {
+            const newImg = ctx.canvas.toDataURL('image/jpeg', 0.1);
+            socket.emit(ClientToServer.SendingUpdatedRoom, newImg);
+        });
+
         return () => {
             socket.off(ServerToClient.UserDrew);
+            socket.off(ServerToClient.PollingRoomImg);
         };
     }, [ctx, roomIsReady]);
 }

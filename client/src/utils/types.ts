@@ -5,6 +5,7 @@ export enum ClientToServer {
     JoiningRoom = 'joiningRoom',
     RequestingRoomData = 'requestingRoomData',
     RequestingUsers = 'requestingUsers',
+    SendingUpdatedRoom = 'SendingUpdatedRoom',
     Drawing = 'drawing',
     MovingMouse = 'movingMouse',
     LeavingRoom = 'leavingRoom',
@@ -13,11 +14,13 @@ export enum ClientToServer {
 
 export enum ServerToClient {
     RoomCreated = 'roomCreated',
-    RoomDeleted = 'roomDeleted',
+    PollingRoomImg = 'pollingRoomImg',
+    RoomPreviewUpdated = 'roomPreviewUpdated',
     UserJoinedRoom = 'userJoinedRoom',
     UserMovedMouse = 'userMovedMouse',
     UserDrew = 'userDrew',
     UserLeft = 'userLeft',
+    RoomDeleted = 'roomDeleted',
 }
 
 export type User = {
@@ -36,17 +39,17 @@ export type RoomPreview = {
     id: string;
     roomName: string;
     userNumber: number;
+    image: string;
+};
+
+export type UpdatedRoomPreview = {
+    id: string;
+    image: string;
 };
 
 export type JoinRoomRequest = {
     roomId: string;
     userName?: string;
-};
-
-export type Room = {
-    roomName: string;
-    allMoves: Move[];
-    users: Map<string, string>;
 };
 
 export type CtxMode = 'line' | 'rect' | 'erase';

@@ -1,18 +1,31 @@
 import { v4 as uuidv4 } from 'uuid';
-import { rooms } from '../data/data';
-import type { RoomPreview, User, Move } from './types';
+import { rooms, roomsWaitingForUpdate } from '../data/data';
+import type { RoomPreview, User, Move, UpdatedRoomPreview } from './types';
 
 export const getAllRooms = (): RoomPreview[] =>
     Array.from(rooms.entries()).map(([id, room]) => ({
         id,
         roomName: room.roomName,
         userNumber: room.users.size,
+        image: room.image,
     }));
 
 export const getRoomPreview = (roomId: string): RoomPreview => {
     const room = rooms.get(roomId);
-    return { id: roomId, roomName: room.roomName, userNumber: room.users.size };
+    return {
+        id: roomId,
+        roomName: room.roomName,
+        userNumber: room.users.size,
+        image: room.image,
+    };
 };
+
+export const updateRoomImg = (roomId: string, newImg: string): UpdatedRoomPreview => {
+    const room = rooms.get(roomId);
+    room.image = newImg;
+    return { id: roomId, image: newImg };
+};
+
 export const createNewRoom = ({
     userName,
     roomId,
@@ -23,7 +36,12 @@ export const createNewRoom = ({
     roomId = roomId || uuidv4();
     userName = setUserName(userName);
     if (rooms.has(roomId)) return [userName, roomId];
-    rooms.set(roomId, { roomName: userName + `'s room`, users: new Map(), allMoves: [] });
+    rooms.set(roomId, {
+        roomName: userName + `'s room`,
+        users: new Map(),
+        allMoves: [],
+        image: '',
+    });
     return [userName, roomId];
 };
 
@@ -37,10 +55,11 @@ export const populateRoom = ({
     userName?: string;
 }) => {
     userName = setUserName(userName);
-    if (!rooms.has(roomId)) {
+    const room = rooms.get(roomId);
+    if (!room) {
         createNewRoom({ userName, roomId });
     }
-    rooms.get(roomId).users.set(userId, userName);
+    room.users.set(userId, userName);
     return userName;
 };
 
@@ -59,6 +78,7 @@ export const getRoomData = (roomId: string, userId: string) => {
 export const addMove = (roomId: string, move: Move) => {
     const room = rooms.get(roomId);
     room.allMoves.push(move);
+    roomsWaitingForUpdate.add(roomId);
 };
 
 export const clearUserFromRoom = (userId: string, roomId: string) => {
@@ -72,6 +92,7 @@ export const deleteEmptyRoom = (roomId: string) => {
     const room = rooms.get(roomId);
     if (!room?.users?.size) {
         rooms.delete(roomId);
+        roomsWaitingForUpdate.delete(roomId);
         return true;
     }
     return false;

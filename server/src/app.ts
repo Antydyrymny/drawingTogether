@@ -4,6 +4,8 @@ import { Server } from 'socket.io';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import { notFound, errorHandler } from './middleware';
+import { roomsWaitingForUpdate } from './data/data';
+import getRandomUser from './utils/getRandomUser';
 import {
     getAllRooms,
     getRoomPreview,
@@ -13,6 +15,7 @@ import {
     addMove,
     clearUserFromRoom,
     deleteEmptyRoom,
+    updateRoomImg,
 } from './utils/serverActions';
 import {
     ClientToServer,
@@ -67,7 +70,12 @@ io.on(ClientToServer.Connection, (socket) => {
         socket.join(roomId);
         socket
             .to(roomId)
-            .emit(ServerToClient.UserJoinedRoom, { id: socket.id, name: newUser });
+            .to('lobby')
+            .emit(
+                ServerToClient.UserJoinedRoom,
+                { id: socket.id, name: newUser },
+                roomId
+            );
         acknowledgeJoining(socket.id);
     });
 
@@ -102,12 +110,27 @@ io.on(ClientToServer.Connection, (socket) => {
         socket.leave('lobby');
     });
 
+    socket.on(ClientToServer.SendingUpdatedRoom, (newImg) => {
+        const roomId = getUsersRoom();
+        const newPreview = updateRoomImg(roomId, newImg);
+        io.in('lobby').emit(ServerToClient.RoomPreviewUpdated, newPreview);
+    });
+
     const onLeave = () => {
         const roomId = getUsersRoom();
         if (!roomId) return;
         const userName = clearUserFromRoom(socket.id, roomId);
         socket.leave(roomId);
-        io.in(roomId).emit(ServerToClient.UserLeft, { id: socket.id, name: userName });
+        io.in(roomId).emit(
+            ServerToClient.UserLeft,
+            { id: socket.id, name: userName },
+            roomId
+        );
+        io.in('lobby').emit(
+            ServerToClient.UserLeft,
+            { id: socket.id, name: userName },
+            roomId
+        );
         setTimeout(() => {
             if (deleteEmptyRoom(roomId))
                 io.in('lobby').emit(ServerToClient.RoomDeleted, roomId);
@@ -115,5 +138,12 @@ io.on(ClientToServer.Connection, (socket) => {
         return roomId;
     };
 });
+
+setInterval(() => {
+    roomsWaitingForUpdate.forEach((roomId) => {
+        io.to(getRandomUser(roomId)).emit(ServerToClient.PollingRoomImg);
+    });
+    roomsWaitingForUpdate.clear();
+}, 10000);
 
 export default server;

@@ -5,6 +5,7 @@ export enum ClientToServer {
     JoiningRoom = 'joiningRoom',
     RequestingRoomData = 'requestingRoomData',
     RequestingUsers = 'requestingUsers',
+    SendingUpdatedRoom = 'SendingUpdatedRoom',
     Drawing = 'drawing',
     MovingMouse = 'movingMouse',
     LeavingRoom = 'leavingRoom',
@@ -13,11 +14,13 @@ export enum ClientToServer {
 
 export enum ServerToClient {
     RoomCreated = 'roomCreated',
-    RoomDeleted = 'roomDeleted',
+    PollingRoomImg = 'pollingRoomImg',
+    RoomPreviewUpdated = 'roomPreviewUpdated',
     UserJoinedRoom = 'userJoinedRoom',
     UserMovedMouse = 'userMovedMouse',
     UserDrew = 'userDrew',
     UserLeft = 'userLeft',
+    RoomDeleted = 'roomDeleted',
 }
 
 export type ClientToServerEvents = {
@@ -35,6 +38,7 @@ export type ClientToServerEvents = {
     [ClientToServer.RequestingRoomData]: (
         acknowledgeRoomData: (roomData: Move[]) => void
     ) => void;
+    [ClientToServer.SendingUpdatedRoom]: (newRoomImg: string) => void;
     [ClientToServer.RequestingUsers]: (acknowledgeUsers: (users: User[]) => void) => void;
     [ClientToServer.MovingMouse]: (mouseMove: MouseMove) => void;
     [ClientToServer.Drawing]: (move: Move) => void;
@@ -45,10 +49,12 @@ export type ClientToServerEvents = {
 
 export type ServerToClientEvents = {
     [ServerToClient.RoomCreated]: (roomPreview: RoomPreview) => void;
-    [ServerToClient.UserJoinedRoom]: (user: User) => void;
+    [ServerToClient.PollingRoomImg]: () => void;
+    [ServerToClient.RoomPreviewUpdated]: (roomPreview: UpdatedRoomPreview) => void;
+    [ServerToClient.UserJoinedRoom]: (user: User, roomId: string) => void;
     [ServerToClient.UserMovedMouse]: (mouseMove: MouseMove) => void;
     [ServerToClient.UserDrew]: (move: Move) => void;
-    [ServerToClient.UserLeft]: (user: User) => void;
+    [ServerToClient.UserLeft]: (user: User, roomId: string) => void;
     [ServerToClient.RoomDeleted]: (roomId: string) => void;
 };
 
@@ -61,6 +67,12 @@ export type RoomPreview = {
     id: string;
     roomName: string;
     userNumber: number;
+    image: string;
+};
+
+export type UpdatedRoomPreview = {
+    id: string;
+    image: string;
 };
 
 export type JoinRoomRequest = {
@@ -72,6 +84,7 @@ export type Room = {
     roomName: string;
     allMoves: Move[];
     users: Map<string, string>;
+    image: string;
 };
 
 export type CtxMode = 'line' | 'rect' | 'erase';

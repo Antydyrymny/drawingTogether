@@ -2,3 +2,15 @@
     position: absolute;
     transform: translate(-100%);
 }
+
+.line {
+    cursor: url('../../assets/brush.png'), auto;
+}
+
+.rect {
+    cursor: url('../../assets/square.png'), auto;
+}
+
+.erase {
+    cursor: url('../../assets/eraser.png'), auto;
+}

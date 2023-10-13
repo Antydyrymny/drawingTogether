@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import {
     Container,
     Row,
@@ -9,10 +9,12 @@ import {
     InputGroup,
     Button,
     Card,
+    Image,
 } from 'react-bootstrap';
 import { toast } from 'react-toastify';
 import { useGetAllRoomsQuery, useCreateRoomMutation } from '../../app/services/api';
 import LoadingSpinner from '../../components/loadingSpinner/LoadingSpinner';
+import { blankImg } from '../../assets/blankImg';
 import { userNameKey } from '../../data/localStorageKeys';
 import styles from './roomPicker.module.scss';
 
@@ -68,23 +70,26 @@ function RoomPicker() {
             </Row>
             {isLoading && <LoadingSpinner />}
             {isSuccess && (
-                <Card className={`${styles.gallery} shadow`}>
-                    <Row className='p-2'>
+                <Card className={`${styles.gallery} shadow p-2`}>
+                    <Row className='p-2 '>
                         {allRooms.map((room) => (
-                            <Col key={room.id} lg={3} className='gap-1'>
-                                <Card.Body>
-                                    <div className={`${styles.galleryItem} border p-2`}>
+                            <Col key={room.id} md={5} lg={4} className='gap-1 '>
+                                <Card.Body className='mb-5 '>
+                                    <div
+                                        onClick={() => {
+                                            if (userName)
+                                                saveNameToLocalStorage(userName);
+                                            navigate(`/room/${room.id}`);
+                                        }}
+                                        className={`${styles.galleryItem}`}
+                                    >
+                                        <Image
+                                            src={room.image || blankImg}
+                                            className={styles.img}
+                                            thumbnail
+                                        />
+                                        <p>{room.roomName}</p>
                                         <p>Number of users: {room.userNumber}</p>
-                                        <Link
-                                            onClick={() => {
-                                                if (userName)
-                                                    saveNameToLocalStorage(userName);
-                                                navigate(`/room/${room.id}`);
-                                            }}
-                                            to={`/room/${room.id}`}
-                                        >
-                                            {room.roomName}
-                                        </Link>
                                     </div>
                                 </Card.Body>
                             </Col>

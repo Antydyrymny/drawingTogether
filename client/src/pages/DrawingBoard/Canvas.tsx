@@ -47,7 +47,9 @@ const Canvas = memo(function Canvas({ options, roomIsReady }: CanvasProps) {
                 ref={overlayRef}
                 height={600}
                 width={600}
-                className={`${styles.overlay} border border-black rounded-md`}
+                className={`${styles.overlay} ${
+                    styles[options.mode]
+                } border border-black rounded-md`}
             >
                 Overlay
             </canvas>

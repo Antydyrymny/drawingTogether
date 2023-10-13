@@ -9,6 +9,7 @@ import {
     JoinRoomRequest,
     User,
     ClientUser,
+    UpdatedRoomPreview,
 } from '../../utils/types';
 import { toast } from 'react-toastify';
 
@@ -53,18 +54,57 @@ const apiSlice = createApi({
                                 autoClose: 2000,
                                 hideProgressBar: true,
                             });
-                            return [...draft, room];
+                            return [
+                                ...draft,
+                                { ...room, userNumber: room.userNumber - 1 },
+                            ];
                         });
                     });
+                    socket.on(
+                        ServerToClient.RoomPreviewUpdated,
+                        (roomUpdate: UpdatedRoomPreview) => {
+                            updateCachedData((draft) => {
+                                return draft.map((room) =>
+                                    room.id === roomUpdate.id
+                                        ? { ...room, image: roomUpdate.image }
+                                        : room
+                                );
+                            });
+                        }
+                    );
                     socket.on(ServerToClient.RoomDeleted, (roomId: string) => {
                         updateCachedData((draft) => {
                             return draft.filter((room) => room.id !== roomId);
+                        });
+                    });
+                    socket.on(
+                        ServerToClient.UserJoinedRoom,
+                        (_user: User, roomId: string) => {
+                            updateCachedData((draft) => {
+                                return draft.map((room) =>
+                                    room.id === roomId
+                                        ? { ...room, userNumber: room.userNumber + 1 }
+                                        : room
+                                );
+                            });
+                        }
+                    );
+                    socket.on(ServerToClient.UserLeft, (_user: User, roomId: string) => {
+                        updateCachedData((draft) => {
+                            return draft.map((room) =>
+                                room.id === roomId
+                                    ? { ...room, userNumber: room.userNumber - 1 }
+                                    : room
+                            );
                         });
                     });
                     await cacheEntryRemoved;
 
                     socket.off(ServerToClient.RoomCreated);
                     socket.off(ServerToClient.RoomDeleted);
+                    socket.off(ServerToClient.RoomPreviewUpdated);
+                    socket.off(ServerToClient.UserJoinedRoom);
+                    socket.off(ServerToClient.UserLeft);
                 } catch {
                     // if cacheEntryRemoved resolved before cacheDataLoaded,
                     // cacheDataLoaded throws

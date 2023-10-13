@@ -1,6 +1,6 @@
 import React, { Suspense } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
-import LoadingSpinner from './components/loadingSpinner/LoadingSpinner';
+import { Spinner } from 'react-bootstrap';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'react-toastify/dist/ReactToastify.css';
 
@@ -9,7 +9,7 @@ const LazyDrawingBoard = React.lazy(() => import('./pages/DrawingBoard/DrawingBo
 
 function App() {
     return (
-        <Suspense fallback={<LoadingSpinner color='black' />}>
+        <Suspense fallback={<Spinner />}>
             <Routes>
                 <Route path='/' element={<LazyRoomPicker />} />
                 <Route path='/room/:roomId' element={<LazyDrawingBoard />} />

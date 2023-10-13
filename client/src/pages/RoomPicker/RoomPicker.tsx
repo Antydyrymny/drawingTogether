@@ -10,10 +10,10 @@ import {
     Button,
     Card,
     Image,
+    Spinner,
 } from 'react-bootstrap';
 import { toast } from 'react-toastify';
 import { useGetAllRoomsQuery, useCreateRoomMutation } from '../../app/services/api';
-import LoadingSpinner from '../../components/loadingSpinner/LoadingSpinner';
 import { blankImg } from '../../assets/blankImg';
 import { userNameKey } from '../../data/localStorageKeys';
 import styles from './roomPicker.module.scss';
@@ -68,7 +68,7 @@ function RoomPicker() {
                     </Form>
                 </Col>
             </Row>
-            {isLoading && <LoadingSpinner />}
+            {isLoading && <Spinner />}
             {isSuccess && (
                 <Card className={`${styles.gallery} shadow p-2`}>
                     <Row className='p-2 '>
